@@ -69,10 +69,10 @@ namespace CuddleKit.Serialization
 			var valueData = document.GetData(value);
 			switch (document.GetType(value))
 			{
-				case ValueType.Keyword:
-				case ValueType.Integer:
-				case ValueType.Real: Write(valueData); break;
-				case ValueType.String: WriteString(valueData); break;
+				case DataType.Keyword:
+				case DataType.Integer:
+				case DataType.Real: Write(valueData); break;
+				case DataType.String: WriteString(valueData); break;
 			}
 		}
 

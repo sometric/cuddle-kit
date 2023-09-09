@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CuddleKit.ObjectModel
 {
@@ -31,6 +32,7 @@ namespace CuddleKit.ObjectModel
 		/// Creates a new <see cref="DocumentObjectModel"/> instance with the specified children capacity.
 		/// </summary>
 		/// <param name="childrenCapacity">The initial capacity for child nodes.</param>
+		/// <param name="factory">DocumentObjectModel instance factory</param>
 		/// <returns>The created <see cref="DocumentObjectModel"/> instance.</returns>
 		public static DocumentObjectModel Create(int childrenCapacity = 4, IDocumentObjectModelFactory factory = null)
 		{
@@ -96,7 +98,7 @@ namespace CuddleKit.ObjectModel
 					: default;
 
 				var argumentsCount = node.Arguments.Length;
-				nodeClone.Arguments = new Vector<int>(node.Arguments.Length);
+				nodeClone.Arguments = new Vector<SafeIndex>(node.Arguments.Length);
 
 				for (var j = 0; j < argumentsCount; ++j)
 				{
@@ -106,14 +108,14 @@ namespace CuddleKit.ObjectModel
 				}
 
 				var propertiesCount = node.Properties.Length;
-				nodeClone.Properties = new Vector<int>(propertiesCount);
+				nodeClone.Properties = new Vector<SafeIndex>(propertiesCount);
 
 				for (var j = 0; j < propertiesCount; ++j)
 				{
 					ref readonly var property = ref _properties[node.Properties[j]];
 					var value = new DocumentValue(this, property.ValueIndex);
 
-					value.Visit(addValueVisitor, out int valueIndex);
+					value.Visit(addValueVisitor, out SafeIndex valueIndex);
 					nodeClone.Properties.Push() = document.AddProperty(GetLiteral(property.Key), valueIndex);
 				}
 
@@ -190,13 +192,13 @@ namespace CuddleKit.ObjectModel
 		internal Span<NodeData> Nodes =>
 			_nodes.Buffer;
 
-		internal int AddValue<T>(T value)
+		internal SafeIndex AddValue<T>(T value)
 		{
 			_values.Push() = ValueData.AddValue(this, value);
 			return _values.Length - 1;
 		}
 
-		internal int AddProperty(ReadOnlySpan<char> key, int valueIndex)
+		internal int AddProperty(ReadOnlySpan<char> key, SafeIndex valueIndex)
 		{
 			_properties.Push() = new PropertyData { Key = AddLiteral(key), ValueIndex = valueIndex };
 			return _properties.Length - 1;
@@ -222,8 +224,8 @@ namespace CuddleKit.ObjectModel
 			data.Version = 0;
 			data.Name = nameLiteral;
 			data.Annotation = annotationLiteral;
-			data.Arguments = new Vector<int>();
-			data.Properties = new Vector<int>();
+			data.Arguments = new Vector<SafeIndex>();
+			data.Properties = new Vector<SafeIndex>();
 			data.Children = Create(childrenCapacity);
 
 			return new DocumentNode(this, _nodes.Length - 1);
@@ -252,11 +254,11 @@ namespace CuddleKit.ObjectModel
 				result = visitor.Visit(value.GetValue<T>(), value.Annotation);
 		}
 
-		private struct AddValueVisitor : IDocumentValueVisitor<int>
+		private struct AddValueVisitor : IDocumentValueVisitor<SafeIndex>
 		{
 			public DocumentObjectModel TargetDocument;
 
-			public int Visit<T>(in T value, ReadOnlySpan<char> annotation)
+			public SafeIndex Visit<T>(in T value, ReadOnlySpan<char> annotation)
 			{
 				var valueIndex = TargetDocument.AddValue(value);
 				TargetDocument._values[valueIndex].Annotation = TargetDocument.AddLiteral(annotation);
@@ -269,8 +271,8 @@ namespace CuddleKit.ObjectModel
 			public int Version;
 			public SafeIndex Name;
 			public SafeIndex Annotation;
-			public Vector<int> Arguments;
-			public Vector<int> Properties;
+			public Vector<SafeIndex> Arguments;
+			public Vector<SafeIndex> Properties;
 			public DocumentObjectModel Children;
 
 			public void Dispose()
@@ -284,12 +286,12 @@ namespace CuddleKit.ObjectModel
 
 		internal struct ValueData
 		{
-			private readonly int _index;
+			private readonly SafeIndex _index;
 			public readonly TypeInfo TypeInfo;
 			public SafeIndex Annotation;
 			public int Version;
 
-			private ValueData(int index, TypeInfo typeInfo)
+			private ValueData(SafeIndex index, TypeInfo typeInfo)
 			{
 				_index = index;
 				TypeInfo = typeInfo;
@@ -336,9 +338,10 @@ namespace CuddleKit.ObjectModel
 		{
 			public int Version;
 			public SafeIndex Key;
-			public int ValueIndex;
+			public SafeIndex ValueIndex;
 		}
 
+		[SuppressMessage("ReSharper", "UnusedMember.Local")]
 		private readonly ref struct DebuggerView
 		{
 			private readonly DocumentObjectModel _model;

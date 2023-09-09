@@ -1,10 +1,9 @@
 using System;
 using System.Globalization;
+using CuddleKit.Serialization;
 
 namespace CuddleKit.Format
 {
-	using ValueType = Serialization.ValueType;
-
 	public sealed class Uint16Formatter : Formatter<ushort>
 	{
 		private const int BufferLength = 6; // 5 for the longest input: 64,535
@@ -14,7 +13,7 @@ namespace CuddleKit.Format
 		private readonly IFormatProvider _provider;
 
 		public Uint16Formatter(FormatterFlags flags, IFormatProvider provider = null)
-			: base(ValueType.Integer, "u16", flags, BufferLength) =>
+			: base(DataType.Integer, "u16", flags, BufferLength) =>
 			_provider = provider;
 
 		protected override bool TryImport(ReadOnlySpan<char> source, out ushort value) =>

@@ -1,10 +1,9 @@
 using System;
 using System.Globalization;
+using CuddleKit.Serialization;
 
 namespace CuddleKit.Format
 {
-	using ValueType = Serialization.ValueType;
-
 	public sealed class Uint32Formatter : Formatter<uint>
 	{
 		private const int BufferLength = 11; // 10 for the longest input: 4,294,967,295
@@ -14,7 +13,7 @@ namespace CuddleKit.Format
 		private readonly IFormatProvider _provider;
 
 		public Uint32Formatter(FormatterFlags flags, IFormatProvider provider = null)
-			: base(ValueType.Integer, "u32", flags, BufferLength) =>
+			: base(DataType.Integer, "u32", flags, BufferLength) =>
 			_provider = provider;
 
 		protected override bool TryImport(ReadOnlySpan<char> source, out uint value) =>

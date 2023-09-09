@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <RootNamespace>CuddleSharp</RootNamespace>
+        <RootNamespace>CuddleKit</RootNamespace>
         <LangVersion>9</LangVersion>
         <PackageId>CuddleKit</PackageId>
         <TargetFrameworks>netcoreapp3.1;netstandard2.1</TargetFrameworks>

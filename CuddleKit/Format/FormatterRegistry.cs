@@ -37,7 +37,7 @@ namespace CuddleKit.Format
 			{
 				var formatter = formatters[i];
 				_systemTypeRegistry.Add(formatter.Specification.SystemType, formatter);
-				_documentTypeRegistry.Add(formatter.Specification.DocumentType, formatter);
+				_documentTypeRegistry.Add(formatter.Specification.DataType, formatter);
 			}
 		}
 

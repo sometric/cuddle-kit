@@ -1,14 +1,13 @@
 using System;
+using CuddleKit.Serialization;
 
 namespace CuddleKit.Format
 {
-	using ValueType = Serialization.ValueType;
-
 	public sealed class GuidFormatter : Formatter<Guid>
 	{
 		public static readonly GuidFormatter Default = new(FormatterFlags.FallbackSystemType);
 
-		public GuidFormatter(FormatterFlags flags) : base(ValueType.String, "uuid", flags, 40)
+		public GuidFormatter(FormatterFlags flags) : base(DataType.String, "uuid", flags, 40)
 		{
 		}
 

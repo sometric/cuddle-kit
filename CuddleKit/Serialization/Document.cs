@@ -166,7 +166,7 @@ namespace CuddleKit.Serialization
 		public readonly ReadOnlySpan<char> GetData(ValueReference value) =>
 			_tokenTable.GetTokenData(_values[value.Index].ValueToken);
 
-		public readonly ValueType GetType(ValueReference value) =>
+		public readonly DataType GetType(ValueReference value) =>
 			_tokenTable.GetTokenType(_values[value.Index].ValueToken);
 
 		public readonly bool TryGetAnnotation(ValueReference value, out ReadOnlySpan<char> annotation)
@@ -255,7 +255,7 @@ namespace CuddleKit.Serialization
 					throw reader.MakeException("Value or identifier expected");
 
 				var valueTokenType = _tokenTable.GetTokenType(value);
-				if (valueTokenType == ValueType.String && reader.ScanSymbol('='))
+				if (valueTokenType == DataType.String && reader.ScanSymbol('='))
 				{
 					var propertyAnnotation = reader
 						.ReadAnnotation(ref _tokenTable)
@@ -365,18 +365,18 @@ namespace CuddleKit.Serialization
 
 		public void NameNodes(ReadOnlySpan<NodeReference> nodes, ReadOnlySpan<char> name)
 		{
-			var idToken = _tokenTable.AllocateToken(ValueType.String, name);
+			var idToken = _tokenTable.AllocateToken(DataType.String, name);
 			foreach (var node in nodes)
 				_nodes[node.Index].NameToken = idToken;
 		}
 
 		public void NameNode(NodeReference node, ReadOnlySpan<char> name) =>
-			_nodes[node.Index].NameToken = _tokenTable.AllocateToken(ValueType.String, name);
+			_nodes[node.Index].NameToken = _tokenTable.AllocateToken(DataType.String, name);
 
 		public void AnnotateNodes(ReadOnlySpan<NodeReference> nodes, ReadOnlySpan<char> annotation)
 		{
 			var annotationToken = !annotation.IsEmpty
-				? _tokenTable.AllocateToken(ValueType.String, annotation)
+				? _tokenTable.AllocateToken(DataType.String, annotation)
 				: default;
 
 			foreach (var node in nodes)
@@ -385,7 +385,7 @@ namespace CuddleKit.Serialization
 
 		public void Annotate(NodeReference node, ReadOnlySpan<char> annotation) =>
 			_nodes[node.Index].AnnotationToken = !annotation.IsEmpty
-				? _tokenTable.AllocateToken(ValueType.String, annotation)
+				? _tokenTable.AllocateToken(DataType.String, annotation)
 				: default;
 
 		public void AddArguments(NodeReference node, ReadOnlySpan<ValueReference> values) =>
@@ -396,7 +396,7 @@ namespace CuddleKit.Serialization
 
 		public void SetProperty(NodeReference node, ReadOnlySpan<char> key, ValueReference value)
 		{
-			var keyToken = _tokenTable.AllocateToken(ValueType.String, key);
+			var keyToken = _tokenTable.AllocateToken(DataType.String, key);
 			SetProperty(TouchPropertiesRow(node, 1), new PropertyReference(keyToken, value));
 		}
 
@@ -439,11 +439,11 @@ namespace CuddleKit.Serialization
 			return description.PropertiesRow;
 		}
 
-		public ValueReference AddValue(ValueType type, ReadOnlySpan<char> data, ReadOnlySpan<char> annotation = default)
+		public ValueReference AddValue(DataType type, ReadOnlySpan<char> data, ReadOnlySpan<char> annotation = default)
 		{
 			var valueToken = _tokenTable.AllocateToken(type, data);
 			var annotationToken = !annotation.IsEmpty
-				? _tokenTable.AllocateToken(ValueType.String, annotation)
+				? _tokenTable.AllocateToken(DataType.String, annotation)
 				: default;
 
 			return AddValue(valueToken, annotationToken);
@@ -457,7 +457,7 @@ namespace CuddleKit.Serialization
 
 		private ReadOnlySpan<NodeReference> AddNodes(SafeIndex rowIndex, int count, ReadOnlySpan<char> name)
 		{
-			var idToken = _tokenTable.AllocateToken(ValueType.String, name);
+			var idToken = _tokenTable.AllocateToken(DataType.String, name);
 			var template = new NodeDescriptor { NameToken = idToken };
 
 			var offset = _nodes.Length;

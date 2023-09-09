@@ -1,10 +1,9 @@
 using System;
 using System.Globalization;
+using CuddleKit.Serialization;
 
 namespace CuddleKit.Format
 {
-	using ValueType = Serialization.ValueType;
-
 	public sealed class DoubleFormatter : Formatter<double>
 	{
 		private const int BufferLength = 768 + 1; // 767 for the longest input + 1 for rounding: 4.9406564584124654E-324
@@ -17,7 +16,7 @@ namespace CuddleKit.Format
 		private readonly IFormatProvider _provider;
 
 		public DoubleFormatter(FormatterFlags flags, IFormatProvider provider = null)
-			: base(ValueType.Real, "f64", flags, BufferLength) =>
+			: base(DataType.Real, "f64", flags, BufferLength) =>
 			_provider = provider ?? DefaultProvider;
 
 		protected override bool TryImport(ReadOnlySpan<char> source, out double value) =>

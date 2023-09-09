@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using CuddleKit.Detail;
 
 namespace CuddleKit.ObjectModel
 {
@@ -15,7 +16,7 @@ namespace CuddleKit.ObjectModel
 		private readonly int _index;
 		private readonly int _version;
 
-		internal DocumentValue(DocumentObjectModel parent, int index) =>
+		internal DocumentValue(DocumentObjectModel parent, SafeIndex index) =>
 			(_parent, _index, _version) = (parent, index, parent.Values[index].Version);
 
 		/// <summary>

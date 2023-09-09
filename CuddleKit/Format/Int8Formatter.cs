@@ -1,10 +1,9 @@
 using System;
 using System.Globalization;
+using CuddleKit.Serialization;
 
 namespace CuddleKit.Format
 {
-	using ValueType = Serialization.ValueType;
-
 	public sealed class Int8Formatter : Formatter<sbyte>
 	{
 		private const int BufferLength = 4; // 3 for the longest input: 127
@@ -14,7 +13,7 @@ namespace CuddleKit.Format
 		private readonly IFormatProvider _provider;
 
 		public Int8Formatter(FormatterFlags flags, IFormatProvider provider = null)
-			: base(ValueType.Integer, "i8", flags, BufferLength) =>
+			: base(DataType.Integer, "i8", flags, BufferLength) =>
 			_provider = provider;
 
 		protected override bool TryImport(ReadOnlySpan<char> source, out sbyte value) =>

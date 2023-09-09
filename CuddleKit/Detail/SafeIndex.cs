@@ -22,5 +22,9 @@ namespace CuddleKit.Detail
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			get => _value > 0;
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsValidForRange(int range) =>
+			(_value > 0) & (_value <= range);
 	}
 }

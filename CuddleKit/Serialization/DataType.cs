@@ -1,6 +1,6 @@
 namespace CuddleKit.Serialization
 {
-	public enum ValueType : byte
+	public enum DataType : byte
 	{
 		Undefined,
 		Keyword,

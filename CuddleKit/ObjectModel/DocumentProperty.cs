@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using CuddleKit.Detail;
 
 namespace CuddleKit.ObjectModel
 {
@@ -11,10 +12,10 @@ namespace CuddleKit.ObjectModel
 	public readonly struct DocumentProperty
 	{
 		private readonly DocumentObjectModel _parent;
-		private readonly int _index;
+		private readonly SafeIndex _index;
 		private readonly int _version;
 
-		internal DocumentProperty(DocumentObjectModel parent, int index) =>
+		internal DocumentProperty(DocumentObjectModel parent, SafeIndex index) =>
 			(_parent, _index, _version) = (parent, index, parent.Properties[index].Version);
 
 		/// <summary>
@@ -26,7 +27,7 @@ namespace CuddleKit.ObjectModel
 			{
 				var properties = _parent != null ? _parent.Properties : default;
 				return 
-					(_index >= 0) & (_index < properties.Length) &&
+					_index.IsValidForRange(properties.Length) &&
 					properties[_index].Version == _version;
 			}
 		}

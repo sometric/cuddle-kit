@@ -84,7 +84,7 @@ namespace CuddleKit.Serialization
 					return default;
 
 				Advance(position);
-				return tokenTable.AllocateToken(ValueType.String, identifierBuffer.Buffer);
+				return tokenTable.AllocateToken(DataType.String, identifierBuffer.Buffer);
 			}
 
 			do
@@ -101,7 +101,7 @@ namespace CuddleKit.Serialization
 			}
 
 			Advance(position);
-			return tokenTable.AllocateToken(ValueType.String, identifier);
+			return tokenTable.AllocateToken(DataType.String, identifier);
 		}
 
 		private TokenReference? ReadEscapedString(ref TokenTable tokenTable)
@@ -196,7 +196,7 @@ namespace CuddleKit.Serialization
 				}
 			}
 
-			return tokenTable.AllocateToken(ValueType.String, stringBuffer.ReadOnlyBuffer);
+			return tokenTable.AllocateToken(DataType.String, stringBuffer.ReadOnlyBuffer);
 		}
 
 		public TokenReference? ReadValue(ref TokenTable tokenTable) =>
@@ -257,7 +257,7 @@ namespace CuddleKit.Serialization
 				Advance(1);
 			}
 
-			return tokenTable.AllocateToken(ValueType.String, stringBuffer.ReadOnlyBuffer);
+			return tokenTable.AllocateToken(DataType.String, stringBuffer.ReadOnlyBuffer);
 		}
 
 		public TokenReference? ReadReal(ref TokenTable tokenTable)
@@ -368,7 +368,7 @@ namespace CuddleKit.Serialization
 				}
 			}
 
-			var data = tokenTable.AllocateToken(ValueType.Real, digitsBuffer.Length, out var token);
+			var data = tokenTable.AllocateToken(DataType.Real, digitsBuffer.Length, out var token);
 			digitsBuffer.ReadOnlyBuffer.CopyTo(data);
 
 			Advance(position);
@@ -452,7 +452,7 @@ namespace CuddleKit.Serialization
 			var outputDigits = digits.Length == 0 ? zero : digits;
 
 			var tokenLength = (sign == '-' ? 1 : 0) + outputDigits.Length;
-			var data = tokenTable.AllocateToken(ValueType.Integer, tokenLength, out var token);
+			var data = tokenTable.AllocateToken(DataType.Integer, tokenLength, out var token);
 			var dataIndex = 0;
 
 			if (sign == '-')

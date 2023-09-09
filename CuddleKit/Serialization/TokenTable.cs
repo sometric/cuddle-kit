@@ -15,7 +15,7 @@ namespace CuddleKit.Serialization
 			_data.Dispose();
 		}
 
-		public Span<char> AllocateToken(ValueType type, int length, out TokenReference token)
+		public Span<char> AllocateToken(DataType type, int length, out TokenReference token)
 		{
 			token = new TokenReference(_tokens.Length); 
 			_tokens.Push() = new Token(type, _data.RowsCount);
@@ -23,7 +23,7 @@ namespace CuddleKit.Serialization
 			return _data.Push(token.Index, length);
 		}
 
-		public TokenReference AllocateToken(ValueType type, ReadOnlySpan<char> data)
+		public TokenReference AllocateToken(DataType type, ReadOnlySpan<char> data)
 		{
 			var token = new TokenReference(_tokens.Length);
 			_tokens.Push() = new Token(type, _data.RowsCount);
@@ -34,7 +34,7 @@ namespace CuddleKit.Serialization
 		public TokenReference AllocateKeywordToken(int keywordIndex)
 		{
 			var token = new TokenReference(_tokens.Length);
-			_tokens.Push() = new Token(ValueType.Keyword, keywordIndex);
+			_tokens.Push() = new Token(DataType.Keyword, keywordIndex);
 			return token;
 		}
 
@@ -43,12 +43,12 @@ namespace CuddleKit.Serialization
 			ref readonly var header = ref _tokens[token.Index];
 			return header.Type switch
 			{
-				ValueType.Keyword => Characters.Keywords[header.RowIndex],
+				DataType.Keyword => Characters.Keywords[header.RowIndex],
 				_ => _data[header.RowIndex]
 			};
 		}
 
-		public readonly ValueType GetTokenType(TokenReference token) =>
+		public readonly DataType GetTokenType(TokenReference token) =>
 			_tokens[token.Index].Type;
 
 		public void Clear()
@@ -59,10 +59,10 @@ namespace CuddleKit.Serialization
 
 		private readonly struct Token
 		{
-			public readonly ValueType Type;
+			public readonly DataType Type;
 			public readonly int RowIndex;
 
-			public Token(ValueType type, int index) =>
+			public Token(DataType type, int index) =>
 				(Type, RowIndex) = (type, index);
 		}
 	}

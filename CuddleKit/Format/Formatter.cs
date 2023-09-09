@@ -4,8 +4,6 @@ using CuddleKit.Serialization;
 
 namespace CuddleKit.Format
 {
-	using ValueType = Serialization.ValueType;
-
 	public abstract class Formatter<TValue> : IFormatter
 	{
 		private readonly FormatterSpecification _specification;
@@ -14,9 +12,9 @@ namespace CuddleKit.Format
 		ref readonly FormatterSpecification IFormatter.Specification =>
 			ref _specification;
 
-		protected Formatter(ValueType valueType, string annotation, FormatterFlags flags, int bufferLength)
+		protected Formatter(DataType dataType, string annotation, FormatterFlags flags, int bufferLength)
 		{
-			_specification = new FormatterSpecification(typeof(TValue), valueType, annotation, flags);
+			_specification = new FormatterSpecification(typeof(TValue), dataType, annotation, flags);
 			_bufferLength = bufferLength;
 		}
 
@@ -44,7 +42,7 @@ namespace CuddleKit.Format
 					? _specification.Annotation
 					: proxy.Annotation;
 
-				return document.AddValue(_specification.DocumentType, data.Slice(0, length), annotation);
+				return document.AddValue(_specification.DataType, data.Slice(0, length), annotation);
 			}
 			finally
 			{

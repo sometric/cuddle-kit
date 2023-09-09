@@ -14,7 +14,7 @@ namespace CuddleKit.Format
 
 		public StringFormatter(FormatterFlags flags) =>
 			_specification =
-				new FormatterSpecification(typeof(string), ValueType.String, string.Empty, flags);
+				new FormatterSpecification(typeof(string), DataType.String, string.Empty, flags);
 
 		bool IFormatter.Import<TProxy>(in Document document, ValueReference reference, TProxy proxy)
 		{
@@ -31,7 +31,7 @@ namespace CuddleKit.Format
 				? _specification.Annotation
 				: proxy.Annotation;
 
-			return document.AddValue(_specification.DocumentType, proxy.Export<string>(), annotation);
+			return document.AddValue(_specification.DataType, proxy.Export<string>(), annotation);
 		}
 	}
 }

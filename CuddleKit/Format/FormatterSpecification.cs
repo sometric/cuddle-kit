@@ -6,16 +6,16 @@ namespace CuddleKit.Format
 	public readonly struct FormatterSpecification
 	{
 		public readonly System.Type SystemType;
-		public readonly ValueType DocumentType;
+		public readonly DataType DataType;
 		public readonly string Annotation;
 		public readonly FormatterFlags Flags;
 
 		public FormatterSpecification(
 			System.Type systemType,
-			ValueType documentType,
+			DataType dataType,
 			string annotation,
 			FormatterFlags flags) =>
-			(SystemType, DocumentType, Annotation, Flags) = (systemType, documentType, annotation, flags);
+			(SystemType, DataType, Annotation, Flags) = (systemType, dataType, annotation, flags);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool HasFlag(FormatterFlags flags) =>
