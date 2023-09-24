@@ -2,7 +2,7 @@ using System;
 
 namespace CuddleKit.Serialization
 {
-	using Detail;
+	using Internal;
 
 	public ref struct Document
 	{
@@ -338,7 +338,12 @@ namespace CuddleKit.Serialization
 			return node;
 		}
 
-		private NodeReference AddNode(TokenReference token)
+		public TokenReference AllocateString(in ReadOnlySpan<char> value) =>
+			!value.IsEmpty
+				? _tokenTable.AllocateToken(DataType.String, value)
+				: default;
+
+		public NodeReference AddNode(TokenReference token)
 		{
 			var node = new NodeReference(_nodes.Length);
 			_nodes.Push() = new NodeDescriptor { NameToken = token };
@@ -346,47 +351,53 @@ namespace CuddleKit.Serialization
 			return node;
 		}
 
-		public ReadOnlySpan<NodeReference> AddNodes(int count, ReadOnlySpan<char> name = default)
+		public ReadOnlySpan<NodeReference> AddNodes(int count, ReadOnlySpan<char> name = default) =>
+			AddNodes(count, AllocateString(name));
+
+		public ReadOnlySpan<NodeReference> AddNodes(int count, TokenReference nameToken)
 		{
 			if (_children.RowsCount == 0)
 				_children.PushRow(count);
 
-			return AddNodes(0, count, name);
+			return AddNodes(0, count, nameToken);
 		}
 
 		public ReadOnlySpan<NodeReference> AddNodes(NodeReference parent, int count, ReadOnlySpan<char> name = default) =>
-			AddNodes(TouchChildrenRow(parent, count), count, name);
+			AddNodes(parent, count, AllocateString(name));
+
+		public ReadOnlySpan<NodeReference> AddNodes(NodeReference parent, int count, TokenReference nameToken) =>
+			parent.IsValid
+				? AddNodes(TouchChildrenRow(parent, count), count, nameToken)
+				: AddNodes(count, nameToken);
 
 		public NodeReference AddNode(ReadOnlySpan<char> name = default) =>
-			AddNodes(1, name)[0];
+			AddNodes(1, AllocateString(name))[0];
 
 		public NodeReference AddNode(NodeReference parent, ReadOnlySpan<char> name = default) =>
 			AddNodes(parent, 1, name)[0];
 
+		public NodeReference AddNode(NodeReference parent, TokenReference nameToken) =>
+			AddNodes(parent, 1, nameToken)[0];
+
 		public void NameNodes(ReadOnlySpan<NodeReference> nodes, ReadOnlySpan<char> name)
 		{
-			var idToken = _tokenTable.AllocateToken(DataType.String, name);
+			var idToken = AllocateString(name);
 			foreach (var node in nodes)
 				_nodes[node.Index].NameToken = idToken;
 		}
 
 		public void NameNode(NodeReference node, ReadOnlySpan<char> name) =>
-			_nodes[node.Index].NameToken = _tokenTable.AllocateToken(DataType.String, name);
+			_nodes[node.Index].NameToken = AllocateString(name);
 
 		public void AnnotateNodes(ReadOnlySpan<NodeReference> nodes, ReadOnlySpan<char> annotation)
 		{
-			var annotationToken = !annotation.IsEmpty
-				? _tokenTable.AllocateToken(DataType.String, annotation)
-				: default;
-
+			var annotationToken = AllocateString(annotation);
 			foreach (var node in nodes)
 				_nodes[node.Index].AnnotationToken = annotationToken;
 		}
 
 		public void Annotate(NodeReference node, ReadOnlySpan<char> annotation) =>
-			_nodes[node.Index].AnnotationToken = !annotation.IsEmpty
-				? _tokenTable.AllocateToken(DataType.String, annotation)
-				: default;
+			_nodes[node.Index].AnnotationToken = AllocateString(annotation);
 
 		public void AddArguments(NodeReference node, ReadOnlySpan<ValueReference> values) =>
 			_arguments.Push(TouchArgumentsRow(node, values.Length), values);
@@ -394,11 +405,11 @@ namespace CuddleKit.Serialization
 		public void AddArgument(NodeReference node, ValueReference value) =>
 			_arguments.Push(TouchArgumentsRow(node, 1), 1)[0] = value;
 
-		public void SetProperty(NodeReference node, ReadOnlySpan<char> key, ValueReference value)
-		{
-			var keyToken = _tokenTable.AllocateToken(DataType.String, key);
+		public void SetProperty(NodeReference node, ReadOnlySpan<char> key, ValueReference value) =>
+			SetProperty(node, _tokenTable.AllocateToken(DataType.String, key), value);
+
+		public void SetProperty(NodeReference node, TokenReference keyToken, ValueReference value) =>
 			SetProperty(TouchPropertiesRow(node, 1), new PropertyReference(keyToken, value));
-		}
 
 		public ValueReference GetProperty(NodeReference node, ReadOnlySpan<char> key)
 		{
@@ -441,10 +452,26 @@ namespace CuddleKit.Serialization
 
 		public ValueReference AddValue(DataType type, ReadOnlySpan<char> data, ReadOnlySpan<char> annotation = default)
 		{
+			var annotationToken = AllocateString(annotation);
+
+			if (type == DataType.Keyword)
+			{
+				Span<char> keyword = stackalloc char[data.Length];
+				data.ToLowerInvariant(keyword);
+
+				for (int i = 0, length = Characters.Keywords.Length; i < length; ++i)
+				{
+					if (keyword.SequenceEqual(Characters.Keywords[i]))
+					{
+						var keywordToken = _tokenTable.AllocateKeywordToken(i);
+						return AddValue(keywordToken, annotationToken);
+					}
+				}
+
+				throw new InvalidOperationException("");
+			}
+
 			var valueToken = _tokenTable.AllocateToken(type, data);
-			var annotationToken = !annotation.IsEmpty
-				? _tokenTable.AllocateToken(DataType.String, annotation)
-				: default;
 
 			return AddValue(valueToken, annotationToken);
 		}
@@ -455,10 +482,10 @@ namespace CuddleKit.Serialization
 			return new ValueReference(_values.Length - 1);
 		}
 
-		private ReadOnlySpan<NodeReference> AddNodes(SafeIndex rowIndex, int count, ReadOnlySpan<char> name)
+		private ReadOnlySpan<NodeReference> AddNodes(SafeIndex rowIndex, int count, TokenReference nameToken)
 		{
-			var idToken = _tokenTable.AllocateToken(DataType.String, name);
-			var template = new NodeDescriptor { NameToken = idToken };
+
+			var template = new NodeDescriptor { NameToken = nameToken };
 
 			var offset = _nodes.Length;
 			_nodes.PushMany(count).Fill(template);

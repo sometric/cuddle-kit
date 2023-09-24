@@ -6,10 +6,11 @@ namespace CuddleKit.Format
 	{
 		ref readonly FormatterSpecification Specification { get; }
 
-		bool Import<TProxy>(in Document document, ValueReference reference, TProxy proxy)
+		bool Import<TProxy>(in Document document, ValueReference reference, ref TProxy importProxy)
 			where TProxy : struct, IFormatterImportProxy;
 
-		ValueReference Export<TProxy>(ref Document document, in TProxy valueGetter)
+		ValueReference Export<TProxy>(ref TProxy exportProxy, ref Document document)
 			where TProxy : struct, IFormatterExportProxy;
 	}
+
 }

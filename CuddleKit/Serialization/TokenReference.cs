@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace CuddleKit.Serialization
 {
-	using Detail;
+	using Internal;
 
 	public readonly struct TokenReference
 	{

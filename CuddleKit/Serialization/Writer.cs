@@ -2,20 +2,39 @@ using System;
 
 namespace CuddleKit.Serialization
 {
-	using Detail;
+	using Internal;
 	using Output;
+
+	public struct WriteSettings
+	{
+		public static readonly WriteSettings Default = new()
+		{
+			Ident = "    ",
+			EndWithLineBreak = false
+		};
+
+		public string Ident;
+		public bool EndWithLineBreak;
+	}
 
 	public ref struct Writer<TOutput>
 		where TOutput : struct, IDocumentOutput
 	{
-		private const string Ident = "    ";
+		private readonly WriteSettings _settings;
 		private TOutput _output;
 
-		public Writer(TOutput output) =>
+		public Writer(TOutput output, in WriteSettings settings)
+		{
+			_settings = settings;
 			_output = output;
+		}
 
-		public void Write(in Document document) =>
+		public void Write(in Document document)
+		{
 			WriteNodes(document, document.Nodes, 0);
+			if (_settings.EndWithLineBreak)
+				_output.Write("\n");
+		}
 
 		private void WriteNodes(in Document document, ReadOnlySpan<NodeReference> nodes, int ident)
 		{
@@ -63,8 +82,8 @@ namespace CuddleKit.Serialization
 
 		private void WriteValue(in Document document, ValueReference value)
 		{
-			if (document.TryGetAnnotation(value, out var valueType))
-				WriteAnnotation(valueType);
+			if (document.TryGetAnnotation(value, out var annotation))
+				WriteAnnotation(annotation);
 
 			var valueData = document.GetData(value);
 			switch (document.GetType(value))
@@ -79,7 +98,7 @@ namespace CuddleKit.Serialization
 		private void WriteIdent(int ident)
 		{
 			for (var i = 0; i < ident; ++i)
-				_output.Write(Ident);
+				_output.Write(_settings.Ident);
 		}
 
 		private void WriteAnnotation(ReadOnlySpan<char> value)

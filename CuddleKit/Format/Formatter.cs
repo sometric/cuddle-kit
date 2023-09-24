@@ -1,6 +1,6 @@
 using System;
-using System.Buffers;
 using CuddleKit.Serialization;
+using CuddleKit.Utility;
 
 namespace CuddleKit.Format
 {
@@ -18,37 +18,33 @@ namespace CuddleKit.Format
 			_bufferLength = bufferLength;
 		}
 
-		bool IFormatter.Import<TProxy>(in Document document, ValueReference reference, TProxy proxy)
+		public ValueReference Export(TValue value, ReadOnlySpan<char> annotation, ref Document document)
+		{
+			using var allocation = SpanAllocation<char>.Retain(_bufferLength, out var data);
+
+			if (!TryExport(value, data, out var length))
+				return default;
+
+			annotation = annotation.IsEmpty & _specification.HasFlag(FormatterFlags.ForceExportAnnotations)
+				? _specification.Annotation
+				: annotation;
+
+			return document.AddValue(_specification.DataType, data.Slice(0, length), annotation);
+		}
+
+		bool IFormatter.Import<TProxy>(in Document document, ValueReference reference, ref TProxy importProxy)
 		{
 			if (!TryImport(document.GetData(reference), out var value))
 				return false;
 
 			document.TryGetAnnotation(reference, out var annotation);
-			proxy.Import(value, annotation);
+			importProxy.Import(value, annotation);
 
 			return true;
 		}
 
-		ValueReference IFormatter.Export<TProxy>(ref Document document, in TProxy proxy)
-		{
-			var buffer = ArrayPool<char>.Shared.Rent(_bufferLength);
-			try
-			{
-				Span<char> data = buffer;
-				if (!TryExport(proxy.Export<TValue>(), data, out var length))
-					return default;
-
-				var annotation = _specification.HasFlag(FormatterFlags.ForceExportAnnotations)
-					? _specification.Annotation
-					: proxy.Annotation;
-
-				return document.AddValue(_specification.DataType, data.Slice(0, length), annotation);
-			}
-			finally
-			{
-				ArrayPool<char>.Shared.Return(buffer);
-			}
-		}
+		ValueReference IFormatter.Export<TProxy>(ref TProxy proxy, ref Document document) =>
+			Export(proxy.Export<TValue>(), proxy.Annotation, ref document);
 
 		protected abstract bool TryImport(ReadOnlySpan<char> source, out TValue value);
 		protected abstract bool TryExport(TValue value, Span<char> destination, out int exportedLength);

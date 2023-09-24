@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CuddleKit.ObjectModel
 {
-	using Detail;
+	using Internal;
 
 	/// <summary>
 	/// Represents a document object model that manages a tree data structure.

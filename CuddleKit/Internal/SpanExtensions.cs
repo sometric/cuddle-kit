@@ -1,12 +1,13 @@
-namespace CuddleKit.Detail
-{
-#if !NETCOREAPP3_0_OR_GREATER
-	using System.Runtime.CompilerServices;
+using System;
+using System.Runtime.CompilerServices;
 
-	internal static class NetStandardSpanExtensions
+namespace CuddleKit.Internal
+{
+	internal static class SpanExtensions
 	{
+#if !NETCOREAPP3_0_OR_GREATER
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool Contains(this System.ReadOnlySpan<char> span, char value)
+		internal static bool Contains(this ReadOnlySpan<char> span, char value)
 		{
 			var found = false;
 			for (int i = 0, length = span.Length; !found & (i < length); ++i)
@@ -16,8 +17,8 @@ namespace CuddleKit.Detail
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static System.Span<T> TrimStart<T>(this System.Span<T> span, T value)
-			where T : struct, System.IEquatable<T>
+		public static Span<T> TrimStart<T>(this Span<T> span, T value)
+			where T : struct, IEquatable<T>
 		{
 			var start = 0;
 
@@ -29,6 +30,6 @@ namespace CuddleKit.Detail
 
 			return span.Slice(start);
 		}
-	}
 #endif
+	}
 }

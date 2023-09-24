@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CuddleKit.Serialization
 {
-	using Detail;
+	using Internal;
 
 	public ref struct Reader
 	{

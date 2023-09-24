@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using CuddleKit.Detail;
+using CuddleKit.Internal;
 
 namespace CuddleKit.ObjectModel
 {

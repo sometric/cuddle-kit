@@ -3,7 +3,14 @@ using System.Runtime.CompilerServices;
 
 namespace CuddleKit.Serialization
 {
-	using Detail;
+	using Internal;
+
+	public enum Keyword
+	{
+		Null,
+		True,
+		False
+	}
 
 	internal static class Characters
 	{
@@ -40,5 +47,17 @@ namespace CuddleKit.Serialization
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsNoneIdentifierSymbol(char symbol) =>
 			symbol <= 0x20 || NonIdentifier.Contains(symbol);
+
+		public static bool TryGetKeywordIndex(ReadOnlySpan<char> value, out int index)
+		{
+			index = 0;
+			for (var length = Keywords.Length; index < length; ++index)
+			{
+				if (value.SequenceEqual(Keywords[index]))
+					return true;
+			}
+
+			return false;
+		}
 	}
 }

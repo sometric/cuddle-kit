@@ -2,7 +2,7 @@ using System;
 
 namespace CuddleKit.Serialization
 {
-	using Detail;
+	using Internal;
 
 	public struct TokenTable
 	{

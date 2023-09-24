@@ -1,0 +1,8 @@
+- {
+    public-field 0
+    private-field 0
+    public-property-public-get-public-set 0
+    public-property-public-get-private-set 0
+    public-property-private-get-public-set 0
+    private-property-public-get-public-set 0
+}

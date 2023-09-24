@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.Contracts;
 
 namespace CuddleKit.Format
 {
@@ -7,6 +6,6 @@ namespace CuddleKit.Format
 	{
 		ReadOnlySpan<char> Annotation { get; }
 
-		[Pure] T Export<T>();
+		TValue Export<TValue>();
 	}
 }

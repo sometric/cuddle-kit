@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace CuddleKit.Detail
+namespace CuddleKit.Internal
 {
 	internal readonly struct SafeIndex
 	{

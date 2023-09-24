@@ -17,12 +17,15 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CuddleKit.Reflection.Dynamic\CuddleKit.Reflection.Dynamic.csproj" />
+      <ProjectReference Include="..\CuddleKit.Reflection\CuddleKit.Reflection.csproj" />
       <ProjectReference Include="..\CuddleKit\CuddleKit.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="..\test_cases\input\*.kdl" LinkBase="Specification.Input" />
-        <EmbeddedResource Include="..\test_cases\expected_kdl\*.kdl" LinkBase="Specification.Output" />
+        <EmbeddedResource Include="..\test_cases\input\*.kdl" LinkBase="SpecificationInput" />
+        <EmbeddedResource Include="..\test_cases\expected_kdl\*.kdl" LinkBase="SpecificationOutput" />
+        <EmbeddedResource Include="..\test_cases\reflection\*.kdl" LinkBase="Reflection" />
     </ItemGroup>
 
 </Project>

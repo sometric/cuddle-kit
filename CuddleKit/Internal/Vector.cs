@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace CuddleKit.Detail
+namespace CuddleKit.Internal
 {
 	[DebuggerDisplay("Length = {" + nameof(Length) + "}")]
 	[DebuggerTypeProxy(typeof(Vector<>.DebuggerView))]

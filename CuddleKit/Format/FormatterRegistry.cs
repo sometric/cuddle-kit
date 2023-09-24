@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
-using CuddleKit.Detail;
+using CuddleKit.Serialization;
 
 namespace CuddleKit.Format
 {
-	public sealed class FormatterRegistry : IDisposable
+	using Internal;
+
+	public struct FormatterRegistry : IDisposable
 	{
 		public static readonly IReadOnlyList<IFormatter> DefaultFormatters = new IFormatter[]
 		{
+			BooleanFormatter.Default,
 			Int8Formatter.Default,
 			Int16Formatter.Default,
 			Int32Formatter.Default,
@@ -26,12 +29,12 @@ namespace CuddleKit.Format
 		public static readonly FormatterRegistry Default = new(DefaultFormatters);
 
 		private Registry<Type> _systemTypeRegistry;
-		private Registry<ValueType> _documentTypeRegistry;
+		private Registry<DataType> _documentTypeRegistry;
 
 		public FormatterRegistry(IReadOnlyList<IFormatter> formatters)
 		{
 			_systemTypeRegistry = new Registry<Type>(FormatterFlags.FallbackSystemType, formatters.Count);
-			_documentTypeRegistry = new Registry<ValueType>(FormatterFlags.FallbackDocumentType, formatters.Count);
+			_documentTypeRegistry = new Registry<DataType>(FormatterFlags.FallbackDocumentType, formatters.Count);
 
 			for (int i = 0, length = formatters.Count; i < length; ++i)
 			{
@@ -41,17 +44,17 @@ namespace CuddleKit.Format
 			}
 		}
 
-		void IDisposable.Dispose()
+		public void Dispose()
 		{
 			_systemTypeRegistry.Dispose();
 			_documentTypeRegistry.Dispose();
 		}
 
-		public IFormatter Lookup(Type type, ReadOnlySpan<char> annotation) =>
+		public readonly IFormatter Lookup(Type type, ReadOnlySpan<char> annotation) =>
 			_systemTypeRegistry.Lookup(type, annotation);
 
-		public IFormatter Lookup(ValueType valueType, ReadOnlySpan<char> annotation) =>
-			_documentTypeRegistry.Lookup(valueType, annotation);
+		public readonly IFormatter Lookup(DataType dataType, ReadOnlySpan<char> annotation) =>
+			_documentTypeRegistry.Lookup(dataType, annotation);
 
 		private struct Registry<TKey>
 		{
@@ -117,6 +120,9 @@ namespace CuddleKit.Format
 
 			public readonly IFormatter Lookup(ReadOnlySpan<char> annotation)
 			{
+				if (annotation.Length == 0)
+					return _fallbackFormatter;
+
 				var position = GetLowerBound(annotation);
 				return position < _annotations.RowsCount && _annotations[position].SequenceEqual(annotation)
 					? _formatters[position]

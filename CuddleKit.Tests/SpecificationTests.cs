@@ -10,8 +10,8 @@ namespace CuddleKit.Tests
 		[Test]
 		public void TestExpectations()
 		{
-			var inputs = ManifestResources.GetResourceMap("Specification.Input.");
-			var outputs = ManifestResources.GetResourceMap("Specification.Output.");
+			var inputs = ManifestResources.GetResourceMap("SpecificationInput.");
+			var outputs = ManifestResources.GetResourceMap("SpecificationOutput.");
 
 			foreach (var (name, inputPath) in inputs)
 			{

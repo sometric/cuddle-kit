@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CuddleKit.Serialization
@@ -7,10 +8,18 @@ namespace CuddleKit.Serialization
 
 	public static class DocumentSerializationExtensions
 	{
-		public static void Write(this Document document, StringBuilder stringBuilder) =>
-			new Writer<StringBuilderOutput>(new StringBuilderOutput(stringBuilder)).Write(document);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Write(this in Document document, StringBuilder stringBuilder, in WriteSettings settings) =>
+			new Writer<StringBuilderOutput>(new StringBuilderOutput(stringBuilder), settings).Write(document);
 
-		public static void Write(this Document document, TextWriter textWriter) =>
-			new Writer<TextWriterOutput>(new TextWriterOutput(textWriter)).Write(document);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Write(this in Document document, StringBuilder stringBuilder) =>
+			Write(document, stringBuilder, WriteSettings.Default);
+
+		public static void Write(this in Document document, TextWriter textWriter, in WriteSettings settings) =>
+			new Writer<TextWriterOutput>(new TextWriterOutput(textWriter), settings).Write(document);
+
+		public static void Write(this in Document document, TextWriter textWriter) =>
+			Write(document, textWriter, WriteSettings.Default);
 	}
 }

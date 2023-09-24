@@ -1,0 +1,6 @@
+- {
+    private-field 0
+    private-readonly-field 0
+    private-property-public-get-public-set 0
+    private-property-public-get-no-set 0
+}

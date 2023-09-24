@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuddleKit.Tool", "CuddleKit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuddleKit.Tests", "CuddleKit.Tests\CuddleKit.Tests.csproj", "{7A23D419-7B9D-4457-845A-CD686095D2E9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuddleKit.Reflection.Dynamic", "CuddleKit.Reflection.Dynamic\CuddleKit.Reflection.Dynamic.csproj", "{76EFBFA8-B4AA-46E0-841B-E44A8D9B205D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CuddleKit.Reflection", "CuddleKit.Reflection\CuddleKit.Reflection.csproj", "{7B125C05-24F0-47B4-BAB1-5BF3E8CBBBC2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{7A23D419-7B9D-4457-845A-CD686095D2E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A23D419-7B9D-4457-845A-CD686095D2E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A23D419-7B9D-4457-845A-CD686095D2E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76EFBFA8-B4AA-46E0-841B-E44A8D9B205D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76EFBFA8-B4AA-46E0-841B-E44A8D9B205D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76EFBFA8-B4AA-46E0-841B-E44A8D9B205D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76EFBFA8-B4AA-46E0-841B-E44A8D9B205D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B125C05-24F0-47B4-BAB1-5BF3E8CBBBC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B125C05-24F0-47B4-BAB1-5BF3E8CBBBC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B125C05-24F0-47B4-BAB1-5BF3E8CBBBC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B125C05-24F0-47B4-BAB1-5BF3E8CBBBC2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

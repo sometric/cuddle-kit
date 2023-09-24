@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace CuddleKit.Detail
+namespace CuddleKit.Internal
 {
 	internal struct MultiVector<T>
 	{

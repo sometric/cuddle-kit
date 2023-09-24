@@ -2,13 +2,13 @@ using System;
 
 namespace CuddleKit.ObjectModel
 {
-	using Detail;
+	using Internal;
 	using Format;
 	using Serialization;
 
 	public static class DocumentObjectFormatExtensions
 	{
-		public static Document Export(this DocumentObjectModel sourceModel, FormatterRegistry registry = null)
+		public static Document Export(this DocumentObjectModel sourceModel, in FormatterRegistry registry)
 		{
 			using var formatter = new DocumentFormatter(registry);
 			var document = new Document();
@@ -26,16 +26,21 @@ namespace CuddleKit.ObjectModel
 			return document;
 		}
 
+		public static Document Export(this DocumentObjectModel sourceModel) =>
+			Export(sourceModel, FormatterRegistry.Default);
+
 		public static void Export(this DocumentObjectModel sourceModel,
 			ref Document targetDocument,
-			FormatterRegistry registry = null)
+			FormatterRegistry registry)
 		{
 			using var formatter = new DocumentFormatter(registry);
 			formatter.ExportModel(sourceModel, ref targetDocument);
 		}
 
-		public static DocumentObjectModel ImportModel(this in Document sourceDocument,
-			FormatterRegistry registry = null)
+		public static void Export(this DocumentObjectModel sourceModel, ref Document targetDocument) =>
+			Export(sourceModel, FormatterRegistry.Default);
+
+		public static DocumentObjectModel ImportModel(this in Document sourceDocument, FormatterRegistry registry)
 		{
 			using var formatter = new DocumentFormatter(registry);
 			var model = new DocumentObjectModel();
@@ -53,13 +58,19 @@ namespace CuddleKit.ObjectModel
 			return model;
 		}
 
+		public static DocumentObjectModel ImportModel(this in Document sourceDocument) =>
+			ImportModel(sourceDocument, FormatterRegistry.Default);
+
 		public static void ImportModel(this in Document sourceDocument,
 			DocumentObjectModel targetModel,
-			FormatterRegistry registry = null)
+			FormatterRegistry registry)
 		{
 			using var formatter = new DocumentFormatter(registry);
 			formatter.ImportModel(sourceDocument, targetModel);
 		}
+
+		public static void ImportModel(this in Document sourceDocument, DocumentObjectModel targetModel) =>
+			ImportModel(sourceDocument, targetModel, FormatterRegistry.Default);
 
 		private ref struct DocumentFormatter
 		{
@@ -68,8 +79,8 @@ namespace CuddleKit.ObjectModel
 			private DocumentNodePropertyProxy _propertyProxy;
 			private DocumentValueExportProxy _valueExportProxy;
 
-			public DocumentFormatter(FormatterRegistry registry) : this() =>
-				_registry = registry ?? FormatterRegistry.Default;
+			public DocumentFormatter(in FormatterRegistry registry) : this() =>
+				_registry = registry;
 
 			public void Dispose() =>
 				_propertyProxy.Dispose();
@@ -111,7 +122,7 @@ namespace CuddleKit.ObjectModel
 
 					_registry
 						.Lookup(valueType, valueAnnotation)?
-						.Import(document, valueReference, _argumentProxy);
+						.Import(document, valueReference, ref _argumentProxy);
 				}
 
 				_propertyProxy.DocumentNode = documentNode;
@@ -126,7 +137,7 @@ namespace CuddleKit.ObjectModel
 					_propertyProxy.Key.Reset(document.GetKey(propertyReference));
 					_registry
 						.Lookup(valueType, valueAnnotation)?
-						.Import(document, propertyReference.Value, _propertyProxy);
+						.Import(document, propertyReference.Value, ref _propertyProxy);
 				}
 
 				var nodes = document.GetChildren(nodeReference);
@@ -156,7 +167,7 @@ namespace CuddleKit.ObjectModel
 					argument.Visit(resolutionVisitor, out IFormatter formatter);
 
 					_valueExportProxy.DocumentValue = argument;
-					var valueReference = formatter.Export(ref document, _valueExportProxy);
+					var valueReference = formatter.Export(ref _valueExportProxy, ref document);
 					document.AddArgument(nodeReference, valueReference);
 				}
 
@@ -166,7 +177,7 @@ namespace CuddleKit.ObjectModel
 					property.Value.Visit(resolutionVisitor, out IFormatter formatter);
 
 					_valueExportProxy.DocumentValue = property.Value;
-					var valueReference = formatter.Export(ref document, _valueExportProxy);
+					var valueReference = formatter.Export(ref _valueExportProxy, ref document);
 					document.SetProperty(nodeReference, property.Key, valueReference);
 				}
 
@@ -182,15 +193,15 @@ namespace CuddleKit.ObjectModel
 			public readonly ReadOnlySpan<char> Annotation =>
 				DocumentValue.Annotation;
 
-			public readonly T Export<T>() =>
-				DocumentValue.GetValue<T>();
+			TValue IFormatterExportProxy.Export<TValue>() =>
+				DocumentValue.GetValue<TValue>();
 		}
 
 		private struct DocumentNodeArgumentProxy : IFormatterImportProxy
 		{
 			public DocumentNode DocumentNode;
 
-			public void Import<T>(T value, ReadOnlySpan<char> annotation) =>
+			void IFormatterImportProxy.Import<T>(T value, ReadOnlySpan<char> annotation) =>
 				DocumentNode.AddArgument(value);
 		}
 
@@ -202,7 +213,7 @@ namespace CuddleKit.ObjectModel
 			public void Dispose() =>
 				Key.Dispose();
 
-			public void Import<T>(T value, ReadOnlySpan<char> annotation)
+			void IFormatterImportProxy.Import<TValue>(TValue value, ReadOnlySpan<char> annotation)
 			{
 				var property = DocumentNode.AddProperty(Key.ReadOnlyBuffer, value);
 				property.Annotation = annotation;
@@ -216,8 +227,8 @@ namespace CuddleKit.ObjectModel
 			public FormatterResolutionVisitor(FormatterRegistry registry) =>
 				_registry = registry;
 
-			public IFormatter Visit<T>(in T value, ReadOnlySpan<char> annotation) =>
-				_registry.Lookup(typeof(T), annotation);
+			IFormatter IDocumentValueVisitor<IFormatter>.Visit<TValue>(in TValue value, ReadOnlySpan<char> annotation) =>
+				_registry.Lookup(typeof(TValue), annotation);
 		}
 	}
 }
