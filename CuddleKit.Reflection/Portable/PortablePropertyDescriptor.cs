@@ -12,5 +12,8 @@ namespace CuddleKit.Reflection.Portable
 
 		public override TValue GetValue<TInstance, TValue>(in TInstance instance) =>
 			(TValue) _propertyInfo.GetValue(instance);
+
+		public override void SetValue<TInstance, TValue>(ref TInstance instance, in TValue value) =>
+			_propertyInfo.SetValue(instance, value);
 	}
 }

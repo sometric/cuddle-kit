@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using CuddleKit.Reflection.Export;
 
 namespace CuddleKit.Reflection
 {
@@ -12,15 +13,33 @@ namespace CuddleKit.Reflection
 		private readonly Dictionary<Type, TypeDescriptor> _descriptors;
 		private readonly IReflectionPolicy _policy;
 		private readonly MemberAccess _memberAccessMask;
+		private readonly List<IMemberResolver> _resolvers;
+		private readonly Dictionary<Type, IMemberExporter> _exporters;
 
-		public TypeCache(IReflectionPolicy reflectionPolicy, MemberAccess memberAccessMask)
+		public TypeCache(
+			IReflectionPolicy reflectionPolicy,
+			IReadOnlyList<IMemberResolver> customResolvers,
+			MemberAccess memberAccessMask)
 		{
 			_descriptors = new Dictionary<Type, TypeDescriptor>();
 			_policy = reflectionPolicy;
 			_memberAccessMask = memberAccessMask;
+
+			var policyResolvers = reflectionPolicy.GetResolvers() ?? Array.Empty<IMemberResolver>();
+			customResolvers ??= Array.Empty<IMemberResolver>();
+
+			_resolvers = new List<IMemberResolver>(policyResolvers.Count + customResolvers.Count);
+
+			for (int i = 0, length = policyResolvers.Count; i < length; ++i)
+				_resolvers.Add(policyResolvers[i]);
+
+			for (int i = 0, length = customResolvers.Count; i < length; ++i)
+				_resolvers.Add(customResolvers[i]);
+
+			_exporters = new Dictionary<Type, IMemberExporter>();
 		}
 
-		public TypeDescriptor GetTypeDescriptor(Type type, MemberAccess accessFilter, MemberKind kindFilter)
+		public TypeDescriptor GetTypeDescriptor(Type type, MemberAccess accessMask, MemberKind kindMask)
 		{
 			lock (_descriptors)
 			{
@@ -28,21 +47,43 @@ namespace CuddleKit.Reflection
 					return descriptor;
 
 				// todo: get filter overrides form type annotation or explicit overrides list
-				descriptor = Describe(type, accessFilter & _memberAccessMask, kindFilter);
+				descriptor = Describe(type, accessMask & _memberAccessMask, kindMask);
 				_descriptors.Add(type, descriptor);
 
 				return descriptor;
 			}
 		}
 
-		private TypeDescriptor Describe(Type type, MemberAccess accessFilter, MemberKind kindFilter)
+		public IMemberExporter GetTypeExporter(Type type)
+		{
+			lock (_exporters)
+			{
+				if (_exporters.TryGetValue(type, out var exporter))
+					return exporter;
+
+				for (var i = _resolvers.Count - 1; i >= 0; --i)
+				{
+					exporter = _resolvers[i].ResolveExporter(type);
+					if (exporter == null)
+						continue;
+
+					_exporters.Add(type, exporter);
+
+					return exporter;
+				}
+			}
+
+			return null;
+		}
+
+		private TypeDescriptor Describe(Type type, MemberAccess accessMask, MemberKind kindMask)
 		{
 			var bindingFlags = BindingFlags.Instance | BindingFlags.FlattenHierarchy;
 
-			var considerPublic = (accessFilter & MemberAccess.Public) != 0;
-			var considerNonPublic = (accessFilter & MemberAccess.NonPublic) != 0;
-			var considerReadOnly = (accessFilter & MemberAccess.ReadOnly) != 0;
-			var considerWriteOnly = (accessFilter & MemberAccess.WriteOnly) != 0;
+			var considerPublic = (accessMask & MemberAccess.Public) != 0;
+			var considerNonPublic = (accessMask & MemberAccess.NonPublic) != 0;
+			var considerReadOnly = (accessMask & MemberAccess.ReadOnly) != 0;
+			var considerWriteOnly = (accessMask & MemberAccess.WriteOnly) != 0;
 
 			if (considerPublic)
 				bindingFlags |= BindingFlags.Public;
@@ -50,11 +91,11 @@ namespace CuddleKit.Reflection
 			if (considerNonPublic)
 				bindingFlags |= BindingFlags.NonPublic;
 
-			var fields = (kindFilter & MemberKind.Field) != 0
+			var fields = (kindMask & MemberKind.Field) != 0
 				? type.GetFields(bindingFlags)
 				: Array.Empty<FieldInfo>();
 
-			var properties = (kindFilter & MemberKind.Property) != 0
+			var properties = (kindMask & MemberKind.Property) != 0
 				? type.GetProperties(bindingFlags)
 				: Array.Empty<PropertyInfo>();
 
@@ -82,10 +123,11 @@ namespace CuddleKit.Reflection
 				var canWrite = propertyInfo.SetMethod is { IsPublic: var isSetterPublic } &&
 					(isSetterPublic == considerPublic) | (!isSetterPublic == considerNonPublic);
 
-				if (canRead & !canWrite & !considerReadOnly)
-					continue;
+				var skipProperty =
+					canRead & !canWrite & !considerReadOnly ||
+					canWrite & !canRead & !considerWriteOnly;
 
-				if (canWrite & !canRead & !considerWriteOnly)
+				if (skipProperty)
 					continue;
 
 				descriptors[descriptorsCount++] = _policy.Describe(propertyInfo);

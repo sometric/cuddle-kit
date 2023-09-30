@@ -9,18 +9,19 @@ namespace CuddleKit.Reflection.Serialization
 	{
 		public static readonly SerializationSettings Default = new()
 		{
-			Formatters = FormatterRegistry.DefaultFormatters,
-			ReflectionPolicy = PotableReflectionPolicy.Shared,
+			Formatters = new List<IFormatter>(FormatterRegistry.DefaultFormatters),
+			ReflectionPolicy = PortableReflectionPolicy.Shared,
 			NamingConvention = LispCaseNamingConvention.Shared,
-			MemberPrefixes = new[] { "_", "m_" },
+			MemberPrefixes = new []{ "_", "m_" },
 			MemberKindMask = MemberKind.Field | MemberKind.Property,
 			MemberAccessMask = MemberAccess.Public
 		};
 
-		public IReadOnlyList<IFormatter> Formatters;
+		public List<IFormatter> Formatters;
 		public IReflectionPolicy ReflectionPolicy;
+		public List<IMemberResolver> CustomResolvers;
 		public INamingConvention NamingConvention;
-		public IReadOnlyList<string> MemberPrefixes;
+		public string[] MemberPrefixes;
 		public MemberKind MemberKindMask;
 		public MemberAccess MemberAccessMask;
 	}

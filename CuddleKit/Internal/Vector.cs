@@ -15,12 +15,12 @@ namespace CuddleKit.Internal
 
 		public void Dispose()
 		{
-			if (_buffer == null)
-				return;
-
-			Pool.Return(_buffer);
+			var buffer = _buffer;
 			_buffer = null;
 			_length = 0;
+
+			if (buffer != null)
+				Pool.Return(buffer);
 		}
 
 		public readonly int Length

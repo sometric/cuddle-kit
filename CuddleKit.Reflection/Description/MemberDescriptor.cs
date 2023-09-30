@@ -18,5 +18,6 @@ namespace CuddleKit.Reflection.Description
 		}
 
 		public abstract TValue GetValue<TInstance, TValue>(in TInstance instance);
+		public abstract void SetValue<TInstance, TValue>(ref TInstance instance, in TValue value);
 	}
 }

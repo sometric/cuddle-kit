@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CuddleKit.Serialization;
+using CuddleKit.Utility;
 
 namespace CuddleKit.Format
 {
@@ -46,8 +47,10 @@ namespace CuddleKit.Format
 
 		public void Dispose()
 		{
-			_systemTypeRegistry.Dispose();
-			_documentTypeRegistry.Dispose();
+			using var systemTypeRegistry = _systemTypeRegistry;
+			using var documentTypeRegistry = _documentTypeRegistry;
+			_systemTypeRegistry = default;
+			_documentTypeRegistry = default;
 		}
 
 		public readonly IFormatter Lookup(Type type, ReadOnlySpan<char> annotation) =>
@@ -56,7 +59,7 @@ namespace CuddleKit.Format
 		public readonly IFormatter Lookup(DataType dataType, ReadOnlySpan<char> annotation) =>
 			_documentTypeRegistry.Lookup(dataType, annotation);
 
-		private struct Registry<TKey>
+		private struct Registry<TKey> : IDisposable
 		{
 			private readonly FormatterFlags _fallbackFlag;
 			private readonly Dictionary<TKey, int> _map;
@@ -70,8 +73,15 @@ namespace CuddleKit.Format
 				_formatters = new Vector<FormattersMap>(capacity);
 			}
 
-			public void Dispose() =>
-				_formatters.Dispose();
+			public void Dispose()
+			{
+				using var formatters = _formatters;
+				_formatters = default;
+
+				// todo: do it as much safe as possible
+				for (int i = 0, length = formatters.Length; i < length; ++i)
+					formatters[i].Dispose();
+			}
 
 			public void Add(TKey key, IFormatter formatter)
 			{
@@ -91,11 +101,16 @@ namespace CuddleKit.Format
 					: null;
 		}
 
-		private struct FormattersMap
+		private struct FormattersMap : IDisposable
 		{
-			private MultiVector<char> _annotations;
-			private Vector<IFormatter> _formatters;
+			private Map<IFormatter> _formattersMap;
 			private IFormatter _fallbackFormatter;
+
+			public void Dispose()
+			{
+				using var map = _formattersMap;
+				_formattersMap = default;
+			}
 
 			public void Insert(IFormatter formatter, bool fallback)
 			{
@@ -106,43 +121,11 @@ namespace CuddleKit.Format
 				if (annotation.Length == 0)
 					return;
 
-				var position = GetLowerBound(annotation);
-				if (position < _annotations.RowsCount && _annotations[position].SequenceEqual(annotation))
-				{
-					_formatters[position] = formatter;
-				}
-				else
-				{
-					_annotations.InsertRow(position, annotation);
-					_formatters.Insert(position) = formatter;
-				}
+				_formattersMap.Insert(annotation) = formatter;
 			}
 
-			public readonly IFormatter Lookup(ReadOnlySpan<char> annotation)
-			{
-				if (annotation.Length == 0)
-					return _fallbackFormatter;
-
-				var position = GetLowerBound(annotation);
-				return position < _annotations.RowsCount && _annotations[position].SequenceEqual(annotation)
-					? _formatters[position]
-					: _fallbackFormatter;
-			}
-
-			private readonly int GetLowerBound(ReadOnlySpan<char> annotation)
-			{
-				var annotationsCount = _annotations.RowsCount;
-				Span<int> bounds = stackalloc int[2] { 0, annotationsCount };
-
-				while (bounds[0] < bounds[1])
-				{
-					var middle = (bounds[0] + bounds[1]) >> 1;
-					var less = _annotations[middle].SequenceCompareTo(annotation) < 0 ? 1 : 0;
-					bounds[1 - less] = middle + less;
-				}
-
-				return bounds[0];
-			}
+			public readonly IFormatter Lookup(ReadOnlySpan<char> annotation) =>
+				_formattersMap.Lookup(annotation, _fallbackFormatter);
 		}
 	}
 }

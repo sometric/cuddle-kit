@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace CuddleKit.Internal
 {
-	internal struct MultiVector<T>
+	internal struct MultiVector<T> : IDisposable
 	{
 		private Vector<Row> _rows;
 		private Vector<T> _data;

@@ -1,5 +1,5 @@
 using System;
-using CuddleKit.Serialization;
+using System.Buffers;
 using CuddleKit.Utility;
 
 namespace CuddleKit.Reflection.Naming
@@ -11,17 +11,27 @@ namespace CuddleKit.Reflection.Naming
 		protected NamingConvention(int capacityFactor = 1) =>
 			_capacityFactor = capacityFactor;
 
-		TokenReference INamingConvention.Write(ReadOnlySpan<char> name, ref Document document)
+		SpanAllocation<char> INamingConvention.Apply(ReadOnlySpan<char> name, ArrayPool<char> pool, out ReadOnlySpan<char> result)
 		{
 			if (name.Length == 0)
+			{
+				result = default;
 				return default;
+			}
 
 			var capacity = _capacityFactor * name.Length;
-			using var allocation = SpanAllocation<char>.Retain(capacity, out var buffer);
-
-			var length = Apply(name, buffer);
-
-			return document.AllocateString(buffer.Slice(0, length));
+			var allocation = SpanAllocation<char>.Retain(pool, capacity, out var buffer);
+			try
+			{
+				var length = Apply(name, buffer);
+				result = buffer.Slice(0, length);
+				return allocation;
+			}
+			catch
+			{
+				allocation.Dispose();
+				throw;
+			}
 		}
 
 		protected abstract int Apply(ReadOnlySpan<char> input, Span<char> output);

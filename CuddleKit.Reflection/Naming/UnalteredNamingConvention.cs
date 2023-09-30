@@ -1,5 +1,6 @@
 using System;
-using CuddleKit.Serialization;
+using System.Buffers;
+using CuddleKit.Utility;
 
 namespace CuddleKit.Reflection.Naming
 {
@@ -9,7 +10,10 @@ namespace CuddleKit.Reflection.Naming
 
 		private UnalteredNamingConvention() {}
 
-		TokenReference INamingConvention.Write(ReadOnlySpan<char> name, ref Document document) =>
-			document.AllocateString(name);
+		SpanAllocation<char> INamingConvention.Apply(ReadOnlySpan<char> name, ArrayPool<char> pool, out ReadOnlySpan<char> result)
+		{
+			result = name;
+			return default;
+		}
 	}
 }

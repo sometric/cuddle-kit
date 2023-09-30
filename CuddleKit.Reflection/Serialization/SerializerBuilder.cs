@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CuddleKit.Format;
 using CuddleKit.Reflection.Naming;
 
@@ -5,10 +6,16 @@ namespace CuddleKit.Reflection.Serialization
 {
 	public class SerializerBuilder
 	{
-		private SerializationSettings _settings = SerializationSettings.Default;
+		private SerializationSettings _settings;
 
 		public static SerializerBuilder Create() =>
-			new SerializerBuilder();
+			new(SerializationSettings.Default);
+
+		public static SerializerBuilder Create(SerializationSettings settings) =>
+			new(settings);
+
+		private SerializerBuilder(in SerializationSettings settings) =>
+			_settings = settings;
 
 		public SerializerBuilder WithReflectionPolicy(IReflectionPolicy reflectionPolicy)
 		{
@@ -26,15 +33,29 @@ namespace CuddleKit.Reflection.Serialization
 			return this;
 		}
 
-		public SerializerBuilder WithFormatter(IFormatter formatter)
+		public SerializerBuilder WithCustomFormatter(IFormatter formatter)
 		{
+			_settings.Formatters ??= new List<IFormatter>();
+			_settings.Formatters.Add(formatter);
+			return this;
+		}
 
+		public SerializerBuilder WithCustomResolver(IMemberResolver resolver)
+		{
+			_settings.CustomResolvers ??= new List<IMemberResolver>();
+			_settings.CustomResolvers.Add(resolver);
 			return this;
 		}
 
 		public SerializerBuilder TrimMemberPrefixes(params string[] prefixes)
 		{
-			_settings.MemberPrefixes = prefixes;
+			_settings.MemberPrefixes = prefixes ?? System.Array.Empty<string>();
+			return this;
+		}
+
+		public SerializerBuilder TrimDefaultMemberPrefixes()
+		{
+			_settings.MemberPrefixes = SerializationSettings.Default.MemberPrefixes;
 			return this;
 		}
 
