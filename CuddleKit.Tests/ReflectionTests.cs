@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -53,7 +55,7 @@ namespace CuddleKit.Tests
 			//public bool BooleanProperty4 { set {} } // yes, no
 		}
 
-		private class MemberAccessTest
+		private struct MemberAccessTest
 		{
 			public int PublicField;
 			public readonly int PublicReadonlyField;
@@ -67,6 +69,32 @@ namespace CuddleKit.Tests
 			private int PrivatePropertyPublicGetPublicSet { get; set; }
 			private int PrivatePropertyPublicGetNoSet { get; }
 			private int PrivatePropertyNoGetPublicSet { set {} }
+		}
+
+		private interface IContact
+		{
+			string Name { get; }
+			string PhoneNumber { get; }
+		}
+
+		private class CompanyContact : IContact
+		{
+			public string Name { get; set; }
+			public string PhoneNumber { get; set; }
+			public string RepresentativeName { get; set; }
+		}
+
+		private class Phonebook
+		{
+			public IContact[] Contacts =
+			{
+				new CompanyContact
+				{
+					Name = "Oz-Ware",
+					PhoneNumber = "123456789",
+					RepresentativeName = "John Smith"
+				}
+			};
 		}
 
 		[Test]
@@ -158,6 +186,24 @@ namespace CuddleKit.Tests
 
 				Assert.AreEqual(expectedKdl, stringBuilder.ToString(), $"Wrong output: {casePrefix}{caseName}");
 			}
+		}
+
+		[Test]
+		public void Reflection_Serialize_ValueTypeResolution()
+		{
+			using var serializer = SerializerBuilder.Create()
+				.WithReflectionPolicy(DynamicReflectionPolicy.Shared)
+				.WithMemberAccessMask(MemberAccess.Public | MemberAccess.NonPublic | MemberAccess.ReadOnly)
+				.WithValueTypeResolution(ValueTypeResolution.Actual)
+				.Build();
+
+			using var document = serializer.Serialize(new Phonebook(), "phonebook");
+
+			var stringBuilder = new StringBuilder();
+			document.Write(stringBuilder);
+
+			var serialized = stringBuilder.ToString();
+			int x = 12;
 		}
 	}
 }

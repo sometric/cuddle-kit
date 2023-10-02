@@ -8,6 +8,12 @@ using CuddleKit.Serialization;
 
 namespace CuddleKit.Reflection.Serialization
 {
+	public enum ValueTypeResolution
+	{
+		Actual,
+		Declared
+	}
+
 	public class Serializer : IDisposable
 	{
 		private const MemberAccess MemberAccessMask =
@@ -17,6 +23,7 @@ namespace CuddleKit.Reflection.Serialization
 		private readonly string[] _memberPrefixes;
 		private readonly MemberKind _memberKindMask;
 		private readonly MemberAccess _memberAccessMask;
+		private readonly ValueTypeResolution _valueTypeResolution;
 		private readonly TypeCache _typeCache;
 		private FormatterRegistry _registry;
 
@@ -26,6 +33,7 @@ namespace CuddleKit.Reflection.Serialization
 			_memberPrefixes = settings.MemberPrefixes ?? Array.Empty<string>();
 			_memberKindMask = settings.MemberKindMask;
 			_memberAccessMask = settings.MemberAccessMask;
+			_valueTypeResolution = settings.ValueTypeResolution;
 			_typeCache = new TypeCache(settings.ReflectionPolicy, settings.CustomResolvers, MemberAccessMask);
 			_registry = new FormatterRegistry(settings.Formatters);
 		}
@@ -36,17 +44,18 @@ namespace CuddleKit.Reflection.Serialization
 		public NodeReference Serialize<T>(in T instance, ReadOnlySpan<char> name, ref Document document)
 		{
 			var nameToken = document.AllocateString(name);
-			return WriteInstance(instance, nameToken, default, ref document);
+			return WriteInstance(instance, typeof(T), nameToken, default, ref document);
 		}
 
 		private NodeReference WriteInstance<TInstance>(
 			in TInstance instance,
+			Type instanceType,
 			TokenReference instanceNameToken,
 			NodeReference parentReference,
 			ref Document document)
 		{
 			var typeDescriptor = _typeCache.GetTypeDescriptor(
-				instance.GetType(),
+				instanceType,
 				_memberAccessMask,
 				_memberKindMask);
 
@@ -96,7 +105,11 @@ namespace CuddleKit.Reflection.Serialization
 				switch (_typeCache.GetTypeExporter(memberDescriptor.Type))
 				{
 					case IObjectExporter objectExporter:
-						var objectVisitor = new ObjectEntryVisitor(this, instanceNode, nameToken);
+						var objectVisitor = new ObjectEntryVisitor(
+							this,
+							instanceNode,
+							nameToken,
+							memberDescriptor.Type);
 
 						objectExporter.Export(memberDescriptor, instance, ref objectVisitor, ref document);
 						break;
@@ -111,12 +124,13 @@ namespace CuddleKit.Reflection.Serialization
 						arrayExporter.Export(memberDescriptor, instance, ref arrayVisitor, ref document);
 						break;
 
-					case IDictionaryExporter dictionaryExporter:
+					case IDictionaryExporter dictionaryExporter
+						when _registry.Lookup(dictionaryExporter.KeyType, default) is {} keyFormatter:
 						var dictionaryNode = document.AddNode(instanceNode, nameToken);
 						var dictionaryVisitor = new DictionaryEntryVisitor(
 							this,
 							dictionaryNode,
-							dictionaryExporter.KeyType,
+							keyFormatter,
 							dictionaryExporter.ValueType);
 
 						dictionaryExporter.Export(memberDescriptor, instance, ref dictionaryVisitor, ref document);
@@ -126,6 +140,13 @@ namespace CuddleKit.Reflection.Serialization
 
 			return instanceNode;
 		}
+
+		private Type ResolveInstanceType<TInstance>(in TInstance instance, Type declaredType) =>
+			_valueTypeResolution switch
+			{
+				ValueTypeResolution.Actual when instance is not null => instance.GetType(),
+				_ => declaredType
+			};
 
 		private readonly struct MemberExportProxy<TInstance> : IFormatterExportProxy
 		{
@@ -152,44 +173,55 @@ namespace CuddleKit.Reflection.Serialization
 			private readonly Serializer _serializer;
 			private readonly NodeReference _instanceNode;
 			private readonly TokenReference _nameToken;
+			private readonly Type _declaredType;
 
-			public ObjectEntryVisitor(Serializer serializer, NodeReference instanceNode, TokenReference nameToken)
+			public ObjectEntryVisitor(
+				Serializer serializer,
+				NodeReference instanceNode,
+				TokenReference nameToken,
+				Type declaredType)
 			{
 				_serializer = serializer;
 				_instanceNode = instanceNode;
 				_nameToken = nameToken;
+				_declaredType = declaredType;
 			}
 
-			void IValueVisitor.Visit<TValue>(in TValue entry, ref Document document) =>
-				_serializer.WriteInstance(entry, _nameToken, _instanceNode, ref document);
+			void IValueVisitor.Visit<TValue>(in TValue instance, ref Document document)
+			{
+				var instanceType = _serializer.ResolveInstanceType(instance, _declaredType);
+				_serializer.WriteInstance(instance, instanceType, _nameToken, _instanceNode, ref document);
+			}
 		}
 
 		private readonly struct ArrayElementVisitor : IValueVisitor
 		{
 			private readonly Serializer _serializer;
 			private readonly NodeReference _arrayNode;
+			private readonly Type _declaredElementType;
 			private readonly IFormatter _declaredElementFormatter;
 
 			public ArrayElementVisitor(Serializer serializer, NodeReference arrayNode, Type declaredElementType)
 			{
 				_serializer = serializer;
 				_arrayNode = arrayNode;
+				_declaredElementType = declaredElementType;
 
 				_declaredElementFormatter = serializer._registry
 					.Lookup(declaredElementType, default);
 			}
 
-			void IValueVisitor.Visit<TValue>(in TValue entry, ref Document document)
+			void IValueVisitor.Visit<TValue>(in TValue element, ref Document document)
 			{
 				var elementFormatter = _declaredElementFormatter ??
 					_serializer._registry
-						.Lookup(entry.GetType(), default);
+						.Lookup(element.GetType(), default);
 
 				var entryNameToken = document.AllocateString("-");
 
 				if (elementFormatter != null)
 				{
-					var proxy = new ValueExportProxy<TValue>(entry);
+					var proxy = new ValueExportProxy<TValue>(element);
 					var elementReference = elementFormatter.Export(ref proxy, ref document);
 
 					document.AddArgument(_arrayNode, elementReference);
@@ -199,7 +231,8 @@ namespace CuddleKit.Reflection.Serialization
 				}
 				else
 				{
-					_serializer.WriteInstance(entry, entryNameToken, _arrayNode, ref document);
+					var elementType = _serializer.ResolveInstanceType(element, _declaredElementType);
+					_serializer.WriteInstance(element, elementType, entryNameToken, _arrayNode, ref document);
 				}
 			}
 		}
@@ -208,24 +241,23 @@ namespace CuddleKit.Reflection.Serialization
 		{
 			private readonly Serializer _serializer;
 			private readonly NodeReference _dictionaryNode;
+			private readonly Type _declaredValueType;
 			private readonly IFormatter _keyFormatter;
 			private readonly IFormatter _declaredValueFormatter;
 
 			public DictionaryEntryVisitor(
 				Serializer serializer,
 				NodeReference dictionaryNode,
-				Type keyType,
-				Type valueType)
+				IFormatter keyFormatter,
+				Type declaredValueType)
 			{
 				_serializer = serializer;
 				_dictionaryNode = dictionaryNode;
-
-				_keyFormatter =
-					serializer._registry.Lookup(keyType, default)
-					?? throw new InvalidOperationException("Key should be a value");
+				_declaredValueType = declaredValueType;
+				_keyFormatter = keyFormatter;
 
 				_declaredValueFormatter =
-					serializer._registry.Lookup(valueType, default);
+					serializer._registry.Lookup(declaredValueType, default);
 			}
 
 			void IKeyValueVisitor.Visit<TKey, TValue>(in TKey key, in TValue value, ref Document document)
@@ -247,7 +279,8 @@ namespace CuddleKit.Reflection.Serialization
 				}
 				else
 				{
-					entryNode = _serializer.WriteInstance(value, entryNameToken, _dictionaryNode, ref document);
+					var valueType = _serializer.ResolveInstanceType(value, _declaredValueType);
+					entryNode = _serializer.WriteInstance(value, valueType, entryNameToken, _dictionaryNode, ref document);
 					document.AddArgument(entryNode, keyReference);
 				}
 			}

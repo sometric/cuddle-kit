@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using CuddleKit.Reflection.Export;
 using CuddleKit.Serialization;
 
@@ -12,7 +11,7 @@ namespace CuddleKit.Reflection.Portable
 		private static readonly Exporter SharedExporter = new();
 
 		IMemberExporter IMemberResolver.ResolveExporter(System.Type type) =>
-			typeof(IDictionary<,>).IsAssignableFrom(type) ? SharedExporter : null;
+			typeof(IEnumerable).IsAssignableFrom(type) ? SharedExporter : null;
 
 		private sealed class Exporter : GenericArrayExporter<IEnumerable, object>
 		{

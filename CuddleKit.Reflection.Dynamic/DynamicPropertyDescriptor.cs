@@ -17,10 +17,11 @@ namespace CuddleKit.Reflection.Dynamic
 			var instanceType = propertyInfo.DeclaringType
 				?? throw new InvalidOperationException("Unable to handle property");
 
-			_accessor = instanceType.IsValueType
-				? (IInstanceAccessor) Activator.CreateInstance(typeof(ValueInstanceAccessor<>).MakeGenericType(instanceType))
-					?? throw new InvalidOperationException("Unable to create a property accessor")
-				: ReferenceInstanceAccessor.Shared;
+			var accessorType = instanceType.IsValueType
+				? typeof(ValueInstanceAccessor<>).MakeGenericType(instanceType)
+				: typeof(ReferenceInstanceAccessor<>).MakeGenericType(instanceType);
+
+			_accessor = (IInstanceAccessor) Activator.CreateInstance(accessorType);
 
 			var valueType = propertyInfo.PropertyType;
 
@@ -83,21 +84,22 @@ namespace CuddleKit.Reflection.Dynamic
 			}
 		}
 
-		private sealed class ReferenceInstanceAccessor : IInstanceAccessor
+		private sealed class ReferenceInstanceAccessor<TDeclaredInstance> : IInstanceAccessor
+			where TDeclaredInstance : class
 		{
 			private delegate TValue Get<in TInstance, out TValue>(TInstance instance);
 			private delegate void Set<in TInstance, TValue>(TInstance instance, TValue value);
 
-			public static readonly ReferenceInstanceAccessor Shared = new();
-
 			Type IInstanceAccessor.GetGetterDelegateType(Type instanceType, Type valueType) =>
-				typeof(Get<,>).MakeGenericType(instanceType, valueType);
+				typeof(Get<,>).MakeGenericType(typeof(TDeclaredInstance), instanceType, valueType);
 
 			Type IInstanceAccessor.GetSetterDelegateType(Type instanceType, Type valueType) =>
-				typeof(Set<,>).MakeGenericType(instanceType, valueType);
+				typeof(Set<,>).MakeGenericType(typeof(TDeclaredInstance), instanceType, valueType);
 
-			TValue IInstanceAccessor.GetValue<TInstance, TValue>(in TInstance instance, Delegate getter) =>
-				((Get<TInstance, TValue>) getter)(instance);
+			TValue IInstanceAccessor.GetValue<TInstance, TValue>(in TInstance instance, Delegate getter)
+			{
+				return ((Get<TDeclaredInstance, TValue>) getter)(instance as TDeclaredInstance);
+			}
 
 			void IInstanceAccessor.SetValue<TInstance, TValue>(ref TInstance instance, in TValue value, Delegate setter) =>
 				((Set<TInstance, TValue>) setter)(instance, value);

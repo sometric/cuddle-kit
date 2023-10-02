@@ -14,7 +14,8 @@ namespace CuddleKit.Reflection.Serialization
 			NamingConvention = LispCaseNamingConvention.Shared,
 			MemberPrefixes = new []{ "_", "m_" },
 			MemberKindMask = MemberKind.Field | MemberKind.Property,
-			MemberAccessMask = MemberAccess.Public
+			MemberAccessMask = MemberAccess.Public,
+			ValueTypeResolution = ValueTypeResolution.Actual
 		};
 
 		public List<IFormatter> Formatters;
@@ -24,5 +25,6 @@ namespace CuddleKit.Reflection.Serialization
 		public string[] MemberPrefixes;
 		public MemberKind MemberKindMask;
 		public MemberAccess MemberAccessMask;
+		public ValueTypeResolution ValueTypeResolution;
 	}
 }

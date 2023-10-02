@@ -71,6 +71,12 @@ namespace CuddleKit.Reflection.Serialization
 			return this;
 		}
 
+		public SerializerBuilder WithValueTypeResolution(ValueTypeResolution typeResolution)
+		{
+			_settings.ValueTypeResolution = typeResolution;
+			return this;
+		}
+
 		public Serializer Build() =>
 			new(_settings);
 	}
